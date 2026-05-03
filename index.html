@@ -13,7 +13,7 @@
     <header class="app-header" role="banner">
       <div class="container header-row">
         <div class="brand">
-          <div class="brand-mark" aria-hidden="true">A</div>
+          <img id="brandLogo" class="brand-logo" src="images/white-logo.png" alt="Aktiv 2.0" />
           <div class="brand-text">
             <div class="brand-title">Актив 2.0</div>
             <div class="brand-subtitle">Логи сообщений</div>
@@ -21,6 +21,19 @@
         </div>
 
         <div class="header-actions">
+          <div class="theme-toggle" role="group" aria-label="Тема">
+            <button class="icon-btn" type="button" data-theme="light" aria-pressed="true" title="Светлая" aria-label="Светлая тема">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2v2m0 16v2M4 12H2m20 0h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="icon-btn" type="button" data-theme="dark" aria-pressed="false" title="Тёмная" aria-label="Тёмная тема">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 13.5A8.5 8.5 0 0 1 10.5 3a7.5 7.5 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
           <div
             id="headerGroupSwitch"
             class="group-switch"

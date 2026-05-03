@@ -3,6 +3,9 @@
     home: document.getElementById("home"),
     logsPage: document.getElementById("logsPage"),
     headerGroupSwitch: document.getElementById("headerGroupSwitch"),
+    homeActions: document.querySelector(".home-actions"),
+    brandLogo: document.getElementById("brandLogo"),
+    themeBtns: Array.from(document.querySelectorAll("[data-theme]")),
     metaLine: document.getElementById("metaLine"),
     cards: document.getElementById("cards"),
     emptyState: document.getElementById("emptyState"),
@@ -11,8 +14,6 @@
     userFilter: document.getElementById("userFilter"),
     resetBtn: document.getElementById("resetBtn"),
     refreshBtn: document.getElementById("refreshBtn"),
-    segBtns: Array.from(document.querySelectorAll(".seg-btn")),
-    openGroupBtns: Array.from(document.querySelectorAll("[data-open-group]")),
   };
 
   const state = {
@@ -23,6 +24,7 @@
     allData: null,
     lastLoadedAt: null,
     dataUrl: "",
+    error: false,
   };
 
   const TYPE_STYLES = {
@@ -30,6 +32,11 @@
     photo: { label: "photo", pill: "ok" },
     edit: { label: "edit", pill: "warn" },
     system: { label: "system", pill: "danger" },
+  };
+
+  const THEME_LOGOS = {
+    light: "images/white-logo.png",
+    dark: "images/black-logo.png",
   };
 
   function escapeHtml(value) {
@@ -76,9 +83,40 @@
     return TYPE_STYLES[type] || { label: String(type || "unknown"), pill: "" };
   }
 
+  function applyTheme(theme) {
+    const t = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = t;
+
+    for (const btn of els.themeBtns) {
+      btn.setAttribute("aria-pressed", btn.dataset.theme === t ? "true" : "false");
+    }
+
+    if (els.brandLogo) {
+      els.brandLogo.src = THEME_LOGOS[t] || THEME_LOGOS.light;
+    }
+
+    const meta = document.querySelector('meta[name="color-scheme"]');
+    if (meta) meta.setAttribute("content", t === "dark" ? "dark" : "light");
+  }
+
+  function initTheme() {
+    const saved = String(window.localStorage?.getItem("aktiv_theme") || "").trim();
+    const start = saved === "dark" || saved === "light" ? saved : "light";
+    applyTheme(start);
+  }
+
+  function setError(next) {
+    state.error = Boolean(next);
+    if (state.error) {
+      els.statusBar.innerHTML = '<div class="error-banner" role="status">Ошибка</div>';
+    } else {
+      els.statusBar.textContent = "";
+    }
+  }
+
   function setGroup(nextGroup) {
     state.group = String(nextGroup);
-    for (const btn of els.segBtns) {
+    for (const btn of els.headerGroupSwitch.querySelectorAll("button[data-group]")) {
       const pressed = btn.dataset.group === state.group;
       btn.setAttribute("aria-pressed", pressed ? "true" : "false");
     }
@@ -91,9 +129,44 @@
     state.page = "logs";
     els.home.hidden = true;
     els.logsPage.hidden = false;
-    els.headerGroupSwitch.hidden = false;
     setGroup(groupToOpen);
     els.searchInput?.focus();
+  }
+
+  function getGroupKeys() {
+    const groups = state.allData?.groups || {};
+    return Object.keys(groups).filter((k) => k !== "undefined" && k !== "null" && k !== "");
+  }
+
+  function syncGroupsUi() {
+    const keys = getGroupKeys();
+
+    if (!keys.length) {
+      els.headerGroupSwitch.hidden = true;
+      if (els.homeActions) els.homeActions.innerHTML = "";
+      return;
+    }
+
+    if (!keys.includes(String(state.group))) state.group = keys[0];
+
+    els.headerGroupSwitch.hidden = keys.length < 2;
+    els.headerGroupSwitch.innerHTML = keys
+      .map((k, idx) => {
+        const pressed = k === String(state.group);
+        return `<button class="seg-btn" type="button" data-group="${escapeHtml(k)}" aria-pressed="${
+          pressed ? "true" : "false"
+        }">${idx + 1} группа</button>`;
+      })
+      .join("");
+
+    if (els.homeActions) {
+      els.homeActions.innerHTML = keys
+        .map(
+          (k, idx) =>
+            `<button class="home-btn" type="button" data-open-group="${escapeHtml(k)}">${idx + 1} группа</button>`,
+        )
+        .join("");
+    }
   }
 
   function getGroupMessages() {
@@ -108,15 +181,18 @@
     for (const m of messages) {
       const key = String(m.username || "");
       if (!key) continue;
-      if (!users.has(key)) users.set(key, m.name || key);
+      const entry = users.get(key) || { name: m.name || key, count: 0 };
+      entry.count += 1;
+      if (!entry.name && m.name) entry.name = m.name;
+      users.set(key, entry);
     }
 
     const options = [
       '<option value="">Все пользователи</option>',
       ...Array.from(users.entries())
-        .sort((a, b) => a[0].localeCompare(b[0], "ru"))
-        .map(([username, name]) => {
-          const label = `${name} (@${username})`;
+        .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0], "ru"))
+        .map(([username, meta]) => {
+          const label = `${meta.name} (@${username}) · ${meta.count}`;
           return `<option value="${escapeHtml(username)}">${escapeHtml(label)}</option>`;
         }),
     ];
@@ -170,6 +246,7 @@
   }
 
   function renderStatus(visible, total) {
+    if (state.error) return;
     const q = state.search.trim();
     const u = state.user;
     const parts = [];
@@ -180,6 +257,11 @@
   }
 
   function renderCards(messages, total) {
+    if (state.error) {
+      els.cards.innerHTML = "";
+      els.emptyState.hidden = true;
+      return;
+    }
     const newestTimestamp = Array.isArray(messages) && messages.length > 0 ? messages[0]?.timestamp : null;
     renderMeta(total, newestTimestamp);
     renderStatus(messages.length, total);
@@ -205,6 +287,14 @@
         const timeLabel = timeRaw === "—" ? "—" : `${time} <span class="tz">МСК</span>`;
         const text = escapeHtml(m.text || "");
         const caption = m.caption ? escapeHtml(m.caption) : "";
+        const canDelete = Number.isInteger(m.id) || typeof m.id === "number";
+        const delBtn = canDelete
+          ? `<button class="icon-btn danger" type="button" data-delete-id="${escapeHtml(m.id)}" title="Удалить" aria-label="Удалить">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 3h6m-8 4h10m-9 0 .8 14h6.4L16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>`
+          : "";
 
         return `
           <article class="card">
@@ -233,6 +323,7 @@
                     : ""
                 }
               </div>
+              ${delBtn ? `<div class="card-actions">${delBtn}</div>` : ""}
             </div>
           </article>
         `;
@@ -240,6 +331,28 @@
       .join("");
 
     els.cards.innerHTML = html;
+  }
+
+  async function deleteLog(id) {
+    const numericId = Number(id);
+    if (!Number.isInteger(numericId) || numericId <= 0) return;
+    const ok = window.confirm("Удалить это сообщение из базы?");
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/api/logs/${encodeURIComponent(String(numericId))}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const groups = state.allData?.groups || {};
+      for (const key of Object.keys(groups)) {
+        const arr = Array.isArray(groups[key]) ? groups[key] : [];
+        groups[key] = arr.filter((m) => Number(m?.id) !== numericId);
+      }
+      state.allData = { ...(state.allData || {}), groups };
+      render();
+    } catch {
+      window.alert("Ошибка");
+    }
   }
 
   async function loadData() {
@@ -254,9 +367,12 @@
       const json = await res.json();
       state.allData = json;
       state.lastLoadedAt = new Date();
+      setError(false);
+      syncGroupsUi();
       return;
     } catch {
       // Fallback: чтобы интерфейс не был пустым без бекенда
+      setError(true);
       state.allData = {
         groups: {
           "1": [
@@ -275,6 +391,7 @@
         },
       };
       state.lastLoadedAt = new Date();
+      syncGroupsUi();
     }
   }
 
@@ -287,13 +404,31 @@
   }
 
   function wireUi() {
-    for (const btn of els.segBtns) {
-      btn.addEventListener("click", () => setGroup(btn.dataset.group));
+    for (const btn of els.themeBtns) {
+      btn.addEventListener("click", () => {
+        const t = btn.dataset.theme === "dark" ? "dark" : "light";
+        window.localStorage?.setItem("aktiv_theme", t);
+        applyTheme(t);
+      });
     }
 
-    for (const btn of els.openGroupBtns) {
-      btn.addEventListener("click", () => showLogsPage(btn.dataset.openGroup));
-    }
+    els.headerGroupSwitch.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("button[data-group]");
+      if (!btn) return;
+      setGroup(btn.dataset.group);
+    });
+
+    els.homeActions?.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("button[data-open-group]");
+      if (!btn) return;
+      showLogsPage(btn.dataset.openGroup);
+    });
+
+    els.cards.addEventListener("click", (e) => {
+      const btn = e.target?.closest?.("[data-delete-id]");
+      if (!btn) return;
+      deleteLog(btn.getAttribute("data-delete-id"));
+    });
 
     const onSearch = () => {
       state.search = els.searchInput.value || "";
@@ -327,6 +462,7 @@
 
   (async function boot() {
     wireUi();
+    initTheme();
     await loadData();
   })();
 })();
