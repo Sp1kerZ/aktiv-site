@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Актив 2.0</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="config.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <header class="app-header" role="banner">
+      <div class="container header-row">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">A</div>
+          <div class="brand-text">
+            <div class="brand-title">Актив 2.0</div>
+            <div class="brand-subtitle">Логи сообщений</div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div
+            id="headerGroupSwitch"
+            class="group-switch"
+            role="group"
+            aria-label="Переключатель группы"
+            hidden
+          >
+            <button class="seg-btn" type="button" data-group="1" aria-pressed="true">
+              1 группа
+            </button>
+            <button class="seg-btn" type="button" data-group="2" aria-pressed="false">
+              2 группа
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container" role="main">
+      <section id="home" class="home" aria-labelledby="homeTitle">
+        <div class="home-card">
+          <h1 id="homeTitle" class="home-title">Актив 2.0</h1>
+          <p class="home-subtitle">
+            Выберите группу для просмотра логов. Источник данных настраивается в <code>config.js</code>.
+          </p>
+          <div class="home-actions">
+            <button class="home-btn" type="button" data-open-group="1">1 группа</button>
+            <button class="home-btn" type="button" data-open-group="2">2 группа</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="logsPage" hidden>
+        <section class="hero" aria-labelledby="pageTitle">
+          <div class="hero-top">
+            <h1 id="pageTitle" class="h1">Просмотр логов</h1>
+            <div class="meta" id="metaLine" aria-live="polite"></div>
+          </div>
+
+          <div class="controls" aria-label="Поиск и фильтры">
+            <label class="field">
+              <span class="field-label">Поиск</span>
+              <div class="field-input">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M10.5 18.5a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M16.7 16.7 21 21"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <input
+                  id="searchInput"
+                  type="search"
+                  placeholder="Имя, username, ID, текст…"
+                  autocomplete="off"
+                />
+              </div>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Пользователь</span>
+              <div class="field-input">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M4.5 21a7.5 7.5 0 0 1 15 0"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <select id="userFilter" aria-label="Фильтр по пользователю">
+                  <option value="">Все пользователи</option>
+                </select>
+              </div>
+            </label>
+
+            <div class="field field-actions" aria-label="Действия">
+              <span class="field-label"> </span>
+              <div class="btn-row">
+                <button id="resetBtn" class="btn secondary" type="button">Сбросить</button>
+                <button id="refreshBtn" class="btn primary" type="button">Обновить</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content" aria-label="Логи">
+          <div id="statusBar" class="statusbar" aria-live="polite"></div>
+
+          <div id="emptyState" class="empty" hidden>
+            <div class="empty-card">
+              <div class="empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 7h10M7 12h10M7 17h6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+              </div>
+              <div class="empty-title">Ничего не найдено</div>
+              <div class="empty-text">Измените поиск/фильтры или переключите группу.</div>
+            </div>
+          </div>
+
+          <div id="cards" class="cards" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+      <div class="container footer-row">
+        <div class="muted">Актив 2.0 • источник данных: <code>config.js</code></div>
+        <div class="muted">Версия интерфейса: 1.0</div>
+      </div>
+    </footer>
+  </body>
+</html>
