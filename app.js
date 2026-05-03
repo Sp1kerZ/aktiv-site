@@ -133,10 +133,14 @@
     els.searchInput?.focus();
   }
 
-  function getGroupKeys() {
-    const groups = state.allData?.groups || {};
-    return Object.keys(groups).filter((k) => k !== "undefined" && k !== "null" && k !== "");
-  }
+function getGroupKeys() {
+  const groups = state.allData?.groups || {};
+  const keys = Object.keys(groups).filter((k) => k !== "undefined" && k !== "null" && k !== "");
+
+  if (keys.length) return keys;
+
+  return ["1", "2"];
+}
 
   function syncGroupsUi() {
     const keys = getGroupKeys();
